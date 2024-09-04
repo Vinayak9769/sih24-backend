@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raahi Chatbot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            height: 100%;
+            background-color: #f7f9fc;
+            color: #333;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .chat-header {
+            background-color: #ffffff;
+            color: #007aff;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #eef2f7;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+        .message {
+            margin-bottom: 20px;
+            padding: 12px 18px;
+            border-radius: 18px;
+            max-width: 70%;
+            line-height: 1.4;
+            font-size: 0.95em;
+        }
+        .bot-message {
+            background-color: #f1f3f5;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .user-message {
+            background-color: #007aff;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .welcome-message {
+            background-color: #ffffff;
+            border-left: 3px solid #007aff;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .welcome-message h3 {
+            margin-bottom: 10px;
+            color: #007aff;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+        }
+        .chat-input {
+            display: flex;
+            padding: 20px;
+            background-color: #ffffff;
+            border-top: 1px solid #eef2f7;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 12px 20px;
+            border: 1px solid #e0e5eb;
+            border-radius: 30px;
+            font-size: 0.95em;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        #user-input:focus {
+            border-color: #007aff;
+            box-shadow: 0 0 0 2px rgba(0,122,255,0.2);
+        }
+        #send-button {
+            margin-left: 10px;
+            padding: 12px 24px;
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        #send-button:hover {
+            background-color: #0056b3;
+        }
+        #send-button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">Raahi Chatbot</div>
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your message...">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/chat/'
+        );
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.mentors) {
+                addBotMessage(data.mentors);
+            } else {
+                console.error('Unexpected response format:', data);
+            }
+        };
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        function addMessage(message, isUser = false) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', isUser ? 'user-message' : 'bot-message');
+            messageElement.innerHTML = message.replace(/\n/g, '<br>');
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addUserMessage(message) {
+            addMessage(message, true);
+            chatSocket.send(JSON.stringify({ 'message': message }));
+        }
+
+        function addBotMessage(message) {
+            addMessage(message, false);
+        }
+
+        function addWelcomeMessage() {
+            const chatMessages = document.getElementById('chat-messages');
+            const welcomeElement = document.createElement('div');
+            welcomeElement.classList.add('welcome-message');
+            welcomeElement.innerHTML = `
+                <h3>Welcome to the Chatbot!</h3>
+                <p>Please provide the following information:</p>
+                <ul>
+                    <li><strong>Experience:</strong> Specify the number of years of experience (e.g., "Experience: 5 years").</li>
+                    <li><strong>Expertise:</strong> Indicate the specific field or specialization (e.g., "Expertise: Data Science").</li>
+                </ul>
+                <p>Use bullet points or a list format for clarity. Ensure that the labels ('Experience' and 'Expertise') are clearly distinguishable from the values.</p>
+            `;
+            chatMessages.appendChild(welcomeElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        window.onload = function() {
+            addWelcomeMessage();
+
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+
+            function sendMessage() {
+                const message = userInput.value.trim();
+                if (message) {
+                    addUserMessage(message);
+                    userInput.value = '';
+                }
+            }
+
+            sendButton.onclick = sendMessage;
+
+            userInput.onkeypress = function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            };
+        };
+    </script>
+</body>
+</html>
