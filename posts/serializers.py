@@ -27,13 +27,20 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class CreatePostSerializer(serializers.ModelSerializer):
+    title = serializers.CharField(
+        required=True,
+        help_text="Title of the post.",
+    )
+    content = serializers.CharField(
+        required=True,
+        help_text="Content of the post.",
+    )
+
     class Meta:
         model = Post
-        fields = ['mentor', 'caption', 'image', 'video']  
+        fields = ['title', 'content']
 
     def create(self, validated_data):
-        post = Post.objects.create(
-            mentor=self.context['request'].user,
-            **validated_data
-        )
+        user = self.context['request'].user
+        post = Post.objects.create(author=user, **validated_data)
         return post

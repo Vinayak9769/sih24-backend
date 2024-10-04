@@ -13,22 +13,19 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%na4_#=+fz2id-$p*e^r7h%&up83b(qipo1g&+i#1=i&l0ws4-'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']
-
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = False
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 # Application definition
 
@@ -48,7 +45,10 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'chatbot',
-    'posts'
+    'posts',
+    'integ.apps.IntegConfig',
+    'drf_yasg'
+
 ]
 
 ASGI_APPLICATION = 'sih.asgi.application'
@@ -99,13 +99,22 @@ WSGI_APPLICATION = 'sih.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_USE_TLS = True
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+
 
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -138,7 +147,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -154,7 +164,15 @@ REST_FRAMEWORK = {
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
-
+SWAGGER_SETTINGS = {
+   'SECURITY_DEFINITIONS': {
+      'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+      }
+   }
+}
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=15),
@@ -189,17 +207,19 @@ SIMPLE_JWT = {
 
 AUTH_USER_MODEL = 'core.Mentor'
 
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST = 'smtp-mail.outlook.com'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+# EMAIL_HOST = REPLACE WITH YOUR EMAIL HOST
+# EMAIL_USE_TLS = True
+# EMAIL_PORT = REPLACE WITH YOUR EMAIL PORT
+# EMAIL_HOST_USER = 'REPLACE WITH YOUR EMAIL'
+# EMAIL_HOST_PASSWORD = 'REPLACE WITH YOUR EMAIL PASSWORD'
 CORS_ALLOW_ALL_ORIGINS = True
-FRONTEND_URL = 'http://localhost:8000'
-BASE_URL = 'https://621b-2409-40c0-9-65ca-8267-b88f-f3ae-a603.ngrok-free.app'
-CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://localhost:5173']
+# FRONTEND_URL = ENTER YOUR FRONTEND URL
+# CSRF_TRUSTED_ORIGINS = REPLACE WITH YOUR TRUSTED ORIGINS
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-CORS_ALLOW_HEADERS = '*'
+# CORS_ALLOW_HEADERS = '*'
+CALENDLY_CLIENT_ID = 'REPLACE_WITH_YOUR_CALENDLY_CLIENT_ID'
+CALENDLY_CLIENT_SECRET = 'REPLACE_WITH_YOUR_CALNDLY_CLIENT_SECRET'
+CALENDLY_REDIRECT_URI = "REPLACE_WITH_YOUR_CALENDLY_REDIRECT_URI"

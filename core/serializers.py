@@ -1,30 +1,43 @@
-from .helper import send_verification_mail
-from rest_framework import serializers
-from .models import Mentor, Category
 from rest_framework import serializers
 from .models import Mentor, Category
 from .models import MentorAvailability
-from datetime import timedelta
-from django.utils import timezone
 from calendarapp.models import Event
 from datetime import datetime, timedelta, date
 
 
 class MentorSerializer(serializers.ModelSerializer):
-    categories = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), many=True, required=False,allow_null=True)
+    categories = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        many=True,
+        required=False,
+        allow_null=True,
+        help_text="List of category IDs the mentor specializes in."
+    )
+
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        help_text="Password for the mentor account.",
+        style={'input_type': 'password'}
+    )
 
     class Meta:
         model = Mentor
-        fields = ['id', 'username', 'password', 'email', 'name', 'bio', 'profile_picture', 'phone_number',
-                  'description', 'expertise', 'linkedin_profile', 'categories', 'price', 'experience', 'company']
+        fields = [
+            'id', 'username', 'password', 'email', 'name', 'bio',
+            'profile_picture', 'phone_number', 'description',
+            'expertise', 'linkedin_profile', 'categories',
+            'price', 'experience', 'company'
+        ]
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         categories = validated_data.pop('categories', [])
+        password = validated_data.pop('password', None)
         user = Mentor(**validated_data)
-        user.set_password(validated_data.get('password'))
+        if password:
+            user.set_password(password)
         user.save()
-        send_verification_mail(user)
         user.categories.set(categories)
         return user
 

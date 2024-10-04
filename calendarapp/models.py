@@ -10,7 +10,7 @@ class Event(models.Model):
     mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, limit_choices_to={'is_mentor': True})
     mentee = models.ForeignKey(Mentee, on_delete=models.SET_NULL, null=True, blank=True)
     title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, null=True)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)

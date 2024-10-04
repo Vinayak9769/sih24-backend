@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from core.permissions import IsMentor
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import serializers, status
@@ -17,22 +16,41 @@ from .helper import send_room_id_email, send_mail
 
 
 @api_view(['POST'])
-@permission_classes([IsMentor, IsAuthenticated])
+@permission_classes([IsAuthenticated, IsMentor])
 def create_event(request):
+    """
+    Creates a new event for a mentor. The request must contain valid event data,
+    and the authenticated user must be a mentor. The event is saved in the system
+    and associated with the mentor.
+
+    Returns:
+        Response: A response containing the event data or an error message.
+    """
     try:
         mentor = Mentor.objects.get(id=request.user.id)
     except Mentor.DoesNotExist:
-        return Response({"error": "Mentor not found."}, status=404)
+        return Response({"error": "Mentor not found."}, status=status.HTTP_404_NOT_FOUND)
     serializer = EventSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(mentor=mentor)
-        return Response(serializer.data, status=201)
-    return Response(serializer.errors, status=400)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated, IsMentor])
 def update_event(request, event_id):
+    """
+    Updates an existing event created by the mentor. The event is identified by
+    the event_id, and the authenticated user must be the mentor who created the event.
+    Allows partial updates of the event.
+
+    Args:
+        event_id (int): ID of the event to update.
+
+    Returns:
+        Response: A response containing the updated event data or an error message.
+    """
     try:
         event = Event.objects.get(id=event_id, mentor=request.user.id)
     except Event.DoesNotExist:
@@ -42,29 +60,45 @@ def update_event(request, event_id):
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
-
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, IsMentor])
 def delete_event(request, event_id):
+    """
+    Deletes an existing event created by the mentor. The event is identified by
+    the event_id, and the authenticated user must be the mentor who created the event.
+
+    Args:
+        event_id (int): ID of the event to delete.
+
+    Returns:
+        Response: A response confirming the deletion or an error message.
+    """
     try:
         event = Event.objects.get(id=event_id, mentor=request.user.id)
     except Event.DoesNotExist:
         return Response({"error": "Event not found or you do not have permission to edit this event."},
                         status=status.HTTP_404_NOT_FOUND)
     event.delete()
-    return Response({"success": "event deleted successfully"}, status=200)
+    return Response({"success": "Event deleted successfully."}, status=200)
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_event_list(request):
+    """
+    Retrieves a filtered list of events for the authenticated user (mentor).
+    The user can filter events using query parameters.
+
+    Returns:
+        Response: A response containing the list of events or an error message.
+    """
     user = request.user
     filter_backend = DjangoFilterBackend()
     filterset = EventFilters(request.GET,
-                             queryset=Event.objects.filter(mentor=user))  # Filter by the authenticated user's mentor
+                             queryset=Event.objects.filter(mentor=user))
 
     if filterset.is_valid():
         filtered_queryset = filterset.qs
@@ -77,16 +111,23 @@ def get_event_list(request):
 
 @csrf_exempt
 @api_view(['POST'])
+@permission_classes([IsAuthenticated, IsMentor])
 def upload_ics_view(request):
+    """
+    Uploads an ICS file and creates events based on the calendar entries in the file.
+    The file must be in the ICS format, and the authenticated user must be a mentor.
+
+    Returns:
+        Response: A response containing the IDs of the created events or an error message.
+    """
     if 'file' not in request.FILES:
         return Response({"detail": "No file provided in the request."}, status=status.HTTP_400_BAD_REQUEST)
     ics_file = request.FILES['file']
     try:
         calendar = Calendar.from_ical(ics_file.read())
         events = []
-        if not request.user.is_authenticated or not hasattr(request.user, 'is_mentor'):
-            return Response({"detail": "User is not authenticated or not a Mentor."}, status=status.HTTP_401_UNAUTHORIZED)
         mentor = request.user
+
         for component in calendar.walk():
             if component.name == "VEVENT":
                 start_time = component.get('dtstart').dt
@@ -120,6 +161,15 @@ def upload_ics_view(request):
 
 @api_view(['POST'])
 def book_event(request):
+    """
+    Books an event for a mentee with a mentor. The mentee information (name, email, phone)
+    and event details (mentor, start time, end time) are provided in the request. An event
+    is created and associated with the mentor and mentee. The mentee will receive an email
+    with the room ID for the event.
+
+    Returns:
+        Response: A response containing the created event data or an error message.
+    """
     mentee_data = request.data.get('mentee', {})
     event_data = request.data.get('event', {})
 
@@ -168,6 +218,5 @@ def book_event(request):
     )
     event.save()
     serializer = EventSerializer(event)
-    # send_room_id_email(serializer.data['id'], mentee.email)
+    send_room_id_email(serializer.data['id'], mentee.email)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
-

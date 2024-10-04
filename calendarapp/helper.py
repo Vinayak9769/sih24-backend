@@ -3,9 +3,12 @@ from django.conf import settings
 from django.utils import timezone
 from .models import TemporaryAccessToken
 import icalendar
-import ics
 from .models import Event
 from datetime import timedelta
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.conf import settings
 
 
 def make_naive(datetime_obj):
@@ -37,21 +40,20 @@ def convert_ics_to_events(ics_file, mentor):
             events.append(event)
     return events
 
-
 def send_room_id_email(room_id, mentee_email):
-    subject = "Your Video Call Room ID"
-    message = (
-        f"Hello,\n\nYou have been invited to join a video call. Your room ID is: https://localhost:5173/room/1?emailId={mentee_email}&roomId=1\n\n"
-        f"Please use this room ID to join the call.\n\nBest Regards,\nRaahi"
-    )
+    subject = "Your Raahi Video Call Invitation"
+    context = {
+        'room_link': f"https://localhost:5173/room/1?emailId={mentee_email}&roomId=1"
+    }
+    html_message = render_to_string('video-call-invitation.html', context)
+    plain_message = strip_tags(html_message)
     from_email = settings.EMAIL_HOST_USER
 
     try:
-        send_mail(subject, message, from_email, [mentee_email])
+        send_mail(subject, plain_message, from_email, [mentee_email], html_message=html_message)
         print("Email sent successfully.")
     except Exception as e:
         print(f"Failed to send email: {e}")
-
 
 def send_meeting_reminder_email(mentee, event):
     mentee_email = mentee.email

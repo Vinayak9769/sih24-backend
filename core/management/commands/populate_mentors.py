@@ -1,7 +1,7 @@
 import random
 from django.core.management.base import BaseCommand
 from faker import Faker
-from core.models import Mentor, Category  
+from core.models import Mentor, Category  # Replace 'myapp' with the actual name of your app
 
 class Command(BaseCommand):
     help = 'Populate database with Mentor records'
@@ -21,10 +21,11 @@ class Command(BaseCommand):
             name = specific_names[i] if i < len(specific_names) else fake.name()
             email = fake.unique.email()
 
+            # Generate a unique username by appending a random number to the name
             username = name.lower().replace(" ", "_") + str(random.randint(1, 10000))
 
             mentor = Mentor.objects.create(
-                username=username,  
+                username=username,  # Assign the generated username
                 name=name,
                 bio=fake.text(),
                 profile_picture=None,

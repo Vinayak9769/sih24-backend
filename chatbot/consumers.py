@@ -93,7 +93,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             mentor_lines.append(f"Experience: {mentor['experience']} years")
             mentor_lines.append(f"Expertise: {mentor['expertise']}")
             mentor_lines.append(f"Book now: https://localhost::5173/mentors/book/{mentor['id']}")
-            mentor_lines.append("\n\n")  
+            mentor_lines.append("\n\n")  # Separator for readability
 
         return "\n".join(mentor_lines)
 
@@ -104,6 +104,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if expertise:
             filters['expertise__icontains'] = expertise
 
+        # Query the Mentor model using Django ORM
         mentors = Mentor.objects.filter(**filters).values('id', 'name', 'bio', 'profile_picture', 'phone_number',
                                                           'experience', 'expertise')
         return list(mentors)

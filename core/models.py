@@ -20,8 +20,12 @@ class Mentor(AbstractUser):
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     name = models.CharField(max_length=255, blank=False)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
-    gender = models.CharField(max_length=10, choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')],
-                              blank=True, null=True)
+    gender = models.CharField(
+        max_length=10,
+        choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')],
+        blank=True,
+        null=True
+    )
     date_joined = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
     email = models.EmailField(unique=True)
@@ -30,7 +34,7 @@ class Mentor(AbstractUser):
     categories = models.ManyToManyField(Category, related_name='mentors', blank=True)
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    experience = models.IntegerField(default=0,blank=True, null=True)
+    experience = models.IntegerField(default=0, blank=True, null=True)
     company = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
@@ -85,16 +89,31 @@ class MentorAvailability(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        if MentorAvailability.objects.filter(mentor=self.mentor, day_of_week=self.day_of_week).exclude(
-                pk=self.pk).exists():
+        if MentorAvailability.objects.filter(
+            mentor=self.mentor,
+            day_of_week=self.day_of_week
+        ).exclude(pk=self.pk).exists():
             raise ValidationError(
-                f"This mentor already has availability set for {self.day_of_week}. Please choose a different day.")
-
+                f"This mentor already has availability set for {self.day_of_week}. Please choose a different day."
+            )
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.mentor.name} - {self.day_of_week} ({self.start_time} to {self.end_time})"
 
 
+class CalendlyToken(models.Model):
+    mentor = models.OneToOneField(Mentor, on_delete=models.CASCADE, related_name='calendly_token')
+    access_token = models.CharField(max_length=255)
+    refresh_token = models.CharField(max_length=255)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
+    def is_expired(self):
+        if self.expires_at:
+            return timezone.now() >= self.expires_at
+        return False
 
+    def __str__(self):
+        return f"CalendlyToken for {self.mentor.username}"
