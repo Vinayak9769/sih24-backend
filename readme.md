@@ -25,7 +25,6 @@ This project was built using the Django framework for the backend and Django Cha
 - **Frontend**: React.js
 - **Authentication**: JWT-based authentication using `rest_framework_simplejwt`.
 - **Real-time communication**: WebSockets with Django Channels
-- **Documentation**: DRF-YASG for auto-generating API documentation (Swagger UI).
 
 ## Installation and Setup
 
