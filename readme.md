@@ -39,7 +39,7 @@ This project was built using the Django framework for the backend and Django Cha
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/vinayak9769/raahi.git
+   git clone https://github.com/vinayak9769/sih24-backend.git
    cd raahi
     ```
 2. Install Python dependencies:
